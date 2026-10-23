@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calendar Atlas</title>
+<meta name="description" content="Every official calendar, your own calendars, and the days you share.">
+<meta name="theme-color" content="#1D6A5F">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Calendars">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Naskh+Arabic:wght@400;600&family=Noto+Sans+Hebrew:wght@400;500&family=Noto+Sans+Ethiopic:wght@400;500&display=swap">
+<style>
+/* Layout: an almanac desk. A "today" band of calendar cards, then a month grid beside a day ledger. */
+:root{
+  --bg:#EDF0EC; --surface:#F8FAF7; --sunk:#E3E8E3; --ink:#17232A; --muted:#5B6A6E; --line:#D2D9D2;
+  --accent:#1D6A5F; --accent-soft:#D5E7E2; --on-accent:#FFFFFF; --gold:#A86E12; --gold-soft:#F3E4C6; --danger:#A3352B;
+  --display:"Young Serif", Georgia, "Times New Roman", serif;
+  --body:"Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --script:"Noto Naskh Arabic","Noto Sans Hebrew","Noto Sans Ethiopic","Instrument Sans",system-ui,sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10171A; --surface:#162026; --sunk:#0D1316; --ink:#E4ECE8; --muted:#93A4A3; --line:#26353B;
+  --accent:#5CC0AD; --accent-soft:#173A36; --on-accent:#0B1614; --gold:#E0AE55; --gold-soft:#3A2E17; --danger:#F08A7E; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10171A; --surface:#162026; --sunk:#0D1316; --ink:#E4ECE8; --muted:#93A4A3; --line:#26353B;
+  --accent:#5CC0AD; --accent-soft:#173A36; --on-accent:#0B1614; --gold:#E0AE55; --gold-soft:#3A2E17; --danger:#F08A7E; color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--body);font-size:15px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:1240px;margin:0 auto;display:grid;gap:22px}
+h1,h2,h3{font-family:var(--display);font-weight:400;margin:0;text-wrap:balance;letter-spacing:.005em}
+h1{font-size:28px;line-height:1.1}
+h2{font-size:21px;line-height:1.2}
+h3{font-size:16px}
+.eyebrow{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.muted{color:var(--muted)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.local{font-family:var(--script);unicode-bidi:plaintext}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 12px;cursor:pointer;line-height:1.2}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:600}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--ink);border-color:var(--line)}
+.btn.danger{color:var(--danger)}
+.btn:disabled{opacity:.5;cursor:default}
+input[type=text],input[type=date],input[type=time],select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0;width:100%}
+textarea{resize:vertical;min-height:60px}
+label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+
+/* ---------- top bar ---------- */
+.top{display:flex;flex-wrap:wrap;align-items:end;gap:14px 24px;justify-content:space-between}
+.brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.brand .sub{color:var(--muted);font-size:14px}
+.pickers{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.pickers label{min-width:200px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 10px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+.chip .dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.chip.live .dot{background:var(--accent)}
+
+/* ---------- today band ---------- */
+.today{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:grid;gap:16px}
+.today-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:end;gap:10px 24px}
+.clock{display:grid;justify-items:end;gap:2px;text-align:end}
+.clock .t{font-family:var(--mono);font-size:26px;font-variant-numeric:tabular-nums;line-height:1}
+.clock .tl{font-size:15px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.card{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:grid;gap:6px;align-content:start;background:var(--bg);min-width:0}
+.card .en{font-size:15px;font-weight:500}
+.card .lc{font-size:18px;line-height:1.5}
+.card .xtra{font-size:12px;color:var(--muted)}
+.card.custom{border-style:dashed}
+.swatch{display:inline-block;width:9px;height:9px;border-radius:50%;margin-inline-end:6px;vertical-align:1px}
+.note{font-size:13px;color:var(--muted);max-width:75ch}
+
+/* ---------- work area ---------- */
+.work{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:960px){.work{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:14px;min-width:0}
+.views{display:flex;flex-wrap:wrap;gap:6px}
+.views button{border:1px solid var(--line);background:transparent;border-radius:999px;padding:5px 11px;font-size:13px;cursor:pointer}
+.views button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.views select{width:auto;font-size:13px;padding:5px 8px;border-radius:999px}
+.nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.nav .label{flex:1;min-width:180px;display:grid}
+.nav .label .lc{font-size:15px;color:var(--muted)}
+.nav .label .now{font-size:13px;color:var(--accent)}
+.clockline{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:14px;color:var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.wd{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:center;padding:2px 0;display:grid}
+.wd .lc{font-size:12px;text-transform:none;letter-spacing:0}
+.cell{position:relative;border:1px solid var(--line);background:var(--bg);border-radius:8px;min-height:78px;padding:6px 7px;display:grid;grid-template-rows:auto auto 1fr;gap:1px;text-align:start;cursor:pointer;min-width:0}
+.cell:hover{border-color:var(--accent)}
+.cell .n{font-family:var(--mono);font-size:17px;font-variant-numeric:tabular-nums;line-height:1.1}
+.cell .s{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell .marks{display:flex;flex-wrap:wrap;gap:3px;align-items:end}
+.cell .ev{width:8px;height:8px;border-radius:50%}
+.cell .more{font-size:10px;color:var(--muted)}
+.cell .thumb{width:20px;height:20px;border-radius:5px;object-fit:cover}
+.cell.obs{background:linear-gradient(var(--gold-soft),var(--gold-soft)) top/100% 3px no-repeat,var(--bg)}
+.cell.today{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.cell.today .n{color:var(--accent);font-weight:500}
+.cell[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
+.cell.pad{visibility:hidden}
+@media (max-width:560px){.cell{min-height:54px;padding:4px}.cell .s{display:none}.cell .n{font-size:15px}}
+.grid.rtl{direction:rtl}
+
+/* ---------- day ledger ---------- */
+.dayhead{display:grid;gap:4px}
+.dayhead .lc{font-size:19px}
+details.every{border-top:1px solid var(--line);padding-top:10px}
+details.every summary{cursor:pointer;font-weight:600;font-size:14px}
+.every-list{display:grid;gap:0;margin-top:8px;overflow-x:auto}
+.every-row{display:grid;grid-template-columns:minmax(120px,.8fr) minmax(0,1.3fr) minmax(0,1.2fr);gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;align-items:baseline}
+.every-row .lc{font-size:15px}
+@media (max-width:560px){.every-row{grid-template-columns:1fr}}
+.obs-list{display:flex;flex-wrap:wrap;gap:6px}
+.obs-tag{background:var(--gold-soft);color:var(--ink);border-radius:999px;padding:3px 10px;font-size:13px}
+.obs-tag b{color:var(--gold);font-weight:600}
+.events{display:grid;gap:10px}
+.event{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px 10px 14px;display:grid;gap:6px;position:relative;background:var(--bg);min-width:0}
+.event::before{content:"";position:absolute;inset-block:10px;inset-inline-start:0;width:3px;border-radius:3px;background:var(--c,var(--accent))}
+.event .row1{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.event .time{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.event .title{font-weight:600;overflow-wrap:anywhere}
+.event .meta{font-size:12px;color:var(--muted)}
+.event .body{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}
+.media{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px}
+.media button{padding:0;border:0;background:var(--sunk);border-radius:8px;overflow:hidden;aspect-ratio:1;cursor:zoom-in;max-width:100%}
+.media img,.media video{width:100%;height:100%;object-fit:cover;display:block}
+.media a.file{display:grid;place-items:center;aspect-ratio:1;border-radius:8px;background:var(--sunk);font-size:12px;text-align:center;padding:6px;color:var(--ink);overflow-wrap:anywhere}
+.event .acts{display:flex;gap:6px;flex-wrap:wrap}
+.empty{border:1px dashed var(--line);border-radius:var(--r);padding:14px;color:var(--muted);font-size:14px}
+form.add{display:grid;gap:10px;border-top:1px solid var(--line);padding-top:14px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.file-pick{border:1px dashed var(--line);border-radius:8px;padding:10px;display:grid;gap:4px;font-size:13px;color:var(--muted)}
+.formmsg{font-size:13px;min-height:1.2em}
+.formmsg.err{color:var(--danger)}
+
+/* ---------- customs ---------- */
+.customs{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 20px;display:grid;gap:14px}
+.clist{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.colors{display:flex;gap:6px;flex-wrap:wrap}
+fieldset.dayone{border:1px solid var(--line);border-radius:10px;padding:10px 12px 12px;margin:0;display:grid;gap:10px;min-width:0}
+fieldset.dayone legend{font-size:13px;color:var(--muted);padding:0 4px}
+fieldset.dayone .alt{max-width:260px}
+.preview{font-size:14px;min-height:1.3em}
+.colors input{position:absolute;opacity:0;width:1px;height:1px}
+.colors label{display:block;width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent}
+.colors input:checked+label{border-color:var(--ink)}
+.colors input:focus-visible+label{outline:2px solid var(--accent);outline-offset:2px}
+footer{font-size:12px;color:var(--muted);max-width:90ch}
+
+/* ---------- lightbox ---------- */
+.lightbox[hidden]{display:none}
+.lightbox{position:fixed;inset:0;background:rgba(5,10,12,.86);display:grid;place-items:center;z-index:50;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.lightbox img,.lightbox video{max-width:100%;max-height:85vh;border-radius:8px}
+.lightbox .close{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));inset-inline-end:calc(12px + env(safe-area-inset-right,0px));background:#fff;color:#111;border:0}
+@media (prefers-reduced-motion:no-preference){.cell,.btn,.views button{transition:border-color .15s,background-color .15s}}
+/* ---------- app additions ---------- */
+body{padding-top:max(20px,env(safe-area-inset-top,0px));padding-bottom:max(48px,env(safe-area-inset-bottom,0px))}
+input[type=email],input[type=password]{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px;min-width:0;width:100%;font-size:16px}
+@media (max-width:560px){input,select,textarea{font-size:16px}}  /* stops iPhone from zooming into fields */
+.acct{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.banner{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--gold-soft);border-radius:12px;padding:10px 14px;font-size:14px}
+.banner[hidden]{display:none}
+.banner span{flex:1;min-width:200px}
+.ph{display:block;aspect-ratio:1;border-radius:8px;background:var(--sunk)}
+.role{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--sunk);color:var(--muted)}
+.role.own{background:var(--accent-soft);color:var(--accent)}
+.share-line{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.modal[hidden]{display:none}
+.modal{position:fixed;inset:0;background:rgba(5,10,12,.55);display:grid;place-items:center;z-index:40;padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px));overflow-y:auto}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;width:min(480px,100%);display:grid;gap:14px;max-height:calc(100dvh - 32px);overflow-y:auto}
+.sheet .head{display:flex;justify-content:space-between;align-items:start;gap:10px}
+.tabs{display:flex;gap:6px}
+.tabs button{border:1px solid var(--line);background:transparent;border-radius:999px;padding:6px 14px;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.linkrow{display:flex;gap:6px;flex-wrap:wrap}
+.linkrow input{flex:1;min-width:180px;font-family:var(--mono);font-size:12px}
+.person{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.person .pname{font-weight:500;overflow-wrap:anywhere}
+.person .pctl{display:flex;gap:6px;align-items:center}
+.person select{width:auto}
+.toast[hidden]{display:none}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:max(20px,env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:60;font-size:14px;max-width:calc(100% - 32px)}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);cursor:pointer;text-decoration:underline;font-size:13px;justify-self:start}
+[hidden]{display:none !important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="banner" id="install" hidden>
+    <span id="installtext"></span>
+    <button class="btn primary" id="installbtn" hidden>Install</button>
+    <button class="btn ghost" id="installx" aria-label="Hide this tip">Hide</button>
+  </div>
+
+  <header class="top">
+    <div class="brand">
+      <h1>Calendar Atlas</h1>
+      <span class="sub">Every official calendar, your own calendars, and the days you share.</span>
+    </div>
+    <div class="pickers">
+      <label for="country">Country or region
+        <select id="country"></select>
+      </label>
+      <label for="tz" id="tzwrap" hidden>Time zone
+        <select id="tz"></select>
+      </label>
+      <div class="acct">
+        <span class="chip" id="status"><span class="dot"></span><span id="statustext">Starting…</span></span>
+        <button class="btn primary" id="acctbtn">Sign in</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="today" aria-labelledby="todayh">
+    <div class="today-head">
+      <div>
+        <div class="eyebrow">Today</div>
+        <h2 id="todayh">Today in —</h2>
+      </div>
+      <div class="clock" aria-live="off">
+        <span class="t" id="clock">--:--:--</span>
+        <span class="tl local" id="clocklocal"></span>
+        <span class="muted" style="font-size:12px" id="clocktz"></span>
+      </div>
+    </div>
+    <div class="cards" id="cards"></div>
+    <p class="note" id="countrynote"></p>
+  </section>
+
+  <section class="work">
+    <div class="panel" aria-label="Month">
+      <div class="views" id="views" role="group" aria-label="Calendar to show"></div>
+      <div class="nav">
+        <button class="btn" id="prevy" aria-label="Previous year" title="Previous year">«</button>
+        <button class="btn" id="prev" aria-label="Previous month" title="Previous month">‹</button>
+        <div class="label"><h2 id="mlabel">—</h2><span class="lc local" id="mlabellocal"></span><span class="mono now" id="mnow" hidden></span></div>
+        <button class="btn" id="next" aria-label="Next month" title="Next month">›</button>
+        <button class="btn" id="nexty" aria-label="Next year" title="Next year">»</button>
+        <button class="btn" id="gotoday">Today</button>
+      </div>
+      <div class="grid" id="wdays" aria-hidden="true"></div>
+      <div class="grid" id="days"></div>
+    </div>
+
+    <div class="panel" aria-label="Selected day" id="daypanel">
+      <div class="dayhead">
+        <div class="eyebrow" id="dayeyebrow">Selected day</div>
+        <h2 id="dayen">—</h2>
+        <div class="lc local" id="daylc"></div>
+      </div>
+      <div class="obs-list" id="dayobs"></div>
+      <div class="events" id="dayevents"></div>
+      <div class="empty" id="addhint" hidden>To add events, first start a personal calendar below, or open an invite link someone sent you.
+        <div style="margin-top:8px"><button class="btn" id="addhintbtn" type="button">Start a calendar</button></div></div>
+      <form class="add" id="addform" autocomplete="off" hidden>
+        <h3>Add to this day</h3>
+        <label for="ev-title">Title
+          <input type="text" id="ev-title" maxlength="200" placeholder="Dentist, Newroz picnic, first steps…">
+        </label>
+        <div class="row">
+          <label for="ev-time">Time (optional)<input type="time" id="ev-time"></label>
+          <label for="ev-cal">Calendar<select id="ev-cal"></select></label>
+        </div>
+        <label for="ev-note">Note (optional)<textarea id="ev-note" maxlength="4000"></textarea></label>
+        <div class="file-pick">
+          <label for="ev-files">Photos, videos or PDFs
+            <input type="file" id="ev-files" multiple accept="image/*,video/*,application/pdf">
+          </label>
+          <span>Up to 50 MB per file. Large photos are made smaller before upload.</span>
+        </div>
+        <div class="formmsg" id="formmsg" role="status"></div>
+        <div><button class="btn primary" type="submit" id="addbtn">Add to day</button></div>
+      </form>
+      <details class="every" open>
+        <summary>This day in every calendar</summary>
+        <div class="every-list" id="every"></div>
+      </details>
+    </div>
+  </section>
+
+  <section class="customs" aria-labelledby="custh">
+    <div>
+      <div class="eyebrow">Your calendars</div>
+      <h2 id="custh">Personal calendars</h2>
+      <p class="note">Start a calendar on any day, such as a birthday, and choose which calendar it counts by. Each of its months begins on the same day of that calendar's month as Day 1, and each new year begins on the anniversary of Day 1 in that calendar. Each calendar is private to you until you share it. Sharing one calendar never shows anyone your other calendars.</p>
+    </div>
+    <div class="empty" id="custsignin" hidden>Sign in to keep your own calendars, add photos and videos, and share a calendar with the people you choose.
+      <div style="margin-top:8px"><button class="btn primary" id="custsigninbtn" type="button">Create an account or sign in</button></div></div>
+    <div class="clist" id="clist"></div>
+    <form class="add" id="calform" autocomplete="off" hidden>
+      <h3>Start a new calendar</h3>
+      <div class="row">
+        <label for="c-name">Name<input type="text" id="c-name" maxlength="80" placeholder="Saman's calendar"></label>
+        <label for="c-base">Count months and years by<select id="c-base"></select></label>
+      </div>
+      <fieldset class="dayone">
+        <legend>Day 1, in that calendar</legend>
+        <div class="row">
+          <label for="c-y">Year<input type="text" inputmode="numeric" id="c-y" maxlength="5"></label>
+          <label for="c-m">Month<select id="c-m"></select></label>
+          <label for="c-d">Day<input type="text" inputmode="numeric" id="c-d" maxlength="2"></label>
+        </div>
+        <label for="c-g" class="alt">Or pick the Gregorian date<input type="date" id="c-g"></label>
+        <div class="row">
+          <label for="c-time">Day 1 begins at (hour : minute : second)<input type="time" id="c-time" step="1" value="00:00:00"></label>
+          <label for="c-tz">Time zone<select id="c-tz"></select></label>
+        </div>
+        <div class="preview" id="c-preview"></div>
+      </fieldset>
+      <label for="c-months">Month names (optional, separated by commas; a lunisolar base can have 13 months)
+        <input type="text" id="c-months" maxlength="400" placeholder="Seed, Sprout, Leaf, …">
+      </label>
+      <div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:6px">Color</div>
+        <div class="colors" id="colors"></div>
+      </div>
+      <div class="formmsg" id="calmsg" role="status"></div>
+      <div><button class="btn primary" type="submit" id="calbtn">Create calendar</button></div>
+    </form>
+  </section>
+
+  <footer id="foot">Dates are computed with the Unicode calendar data built into your device. Islamic months that begin with a local moon sighting, and some lunar holidays, can differ by a day from what a country announces. The Kurdish calendar is shown as the Solar Hijri calendar plus 1321 years, with Kurdish month names.</footer>
+</div>
+
+<!-- sign in / account -->
+<div class="modal" id="authmodal" hidden role="dialog" aria-modal="true" aria-labelledby="authh">
+  <div class="sheet">
+    <div class="head"><h2 id="authh">Sign in</h2><button class="btn ghost" data-close aria-label="Close">Close</button></div>
+    <p class="note" id="au-note" hidden></p>
+    <div class="tabs" id="au-tabs"><button type="button" id="au-tab-in" aria-pressed="true">Sign in</button><button type="button" id="au-tab-up" aria-pressed="false">Create account</button></div>
+    <div id="au-forms">
+      <form id="au-form" style="display:grid;gap:12px">
+        <label id="au-namewrap" for="au-name" hidden>Your name (what people you share with will see)<input type="text" id="au-name" maxlength="60" autocomplete="name"></label>
+        <label id="au-emailwrap" for="au-email">Email<input type="email" id="au-email" autocomplete="email" inputmode="email"></label>
+        <label id="au-passlabel" for="au-pass">Password <input type="password" id="au-pass" autocomplete="current-password" minlength="8"></label>
+        <button type="button" class="linkbtn" id="au-forgot">Forgot your password?</button>
+        <div class="formmsg" id="au-msg" role="status"></div>
+        <div><button class="btn primary" type="submit" id="au-go">Sign in</button></div>
+      </form>
+    </div>
+    <div id="au-acct" hidden style="display:grid;gap:12px">
+      <div class="muted" style="font-size:14px">Signed in as <span id="ac-email"></span></div>
+      <label for="ac-name">Your name (what people you share with will see)<input type="text" id="ac-name" maxlength="60"></label>
+      <div class="formmsg" id="ac-msg" role="status"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" id="ac-save">Save name</button><button class="btn" type="button" id="ac-out">Sign out</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- sharing -->
+<div class="modal" id="sharemodal" hidden role="dialog" aria-modal="true" aria-labelledby="shareh">
+  <div class="sheet">
+    <div class="head"><h2 id="shareh">Share</h2><button class="btn ghost" data-close aria-label="Close">Done</button></div>
+    <div id="sh-invite" style="display:grid;gap:12px">
+      <p class="note">Only the people you invite see this calendar. Your other calendars stay private.</p>
+      <label for="sh-role">The person you invite can
+        <select id="sh-role">
+          <option value="viewer">See this calendar</option>
+          <option value="contributor" selected>See it and add events, photos and videos</option>
+          <option value="editor">Also change it and invite others</option>
+        </select>
+      </label>
+      <div><button class="btn primary" type="button" id="sh-make">Create invite link</button></div>
+      <div id="sh-link" hidden style="display:grid;gap:8px">
+        <div class="linkrow"><input type="text" readonly id="sh-url" aria-label="Invite link"><button class="btn" type="button" id="sh-copy">Copy</button><button class="btn" type="button" id="sh-send">Send…</button></div>
+        <p class="note">Each link works once, for one person, and expires in 14 days. Make a new link for each person.</p>
+      </div>
+    </div>
+    <h3>People on this calendar</h3>
+    <div id="sh-people"></div>
+    <div class="formmsg" id="sh-msg" role="status"></div>
+    <div><button class="btn ghost danger" type="button" id="sh-revoke">Turn off unused invite links</button></div>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Media">
+  <button class="btn close" id="lbclose">Close</button>
+  <div id="lbbody"></div>
+</div>
+<div class="toast" id="toast" hidden role="status"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.9/dist/umd/supabase.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
