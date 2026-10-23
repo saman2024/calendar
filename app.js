@@ -71,25 +71,99 @@ const COUNTRIES = [
 ];
 const byId = Object.fromEntries(COUNTRIES.map((c) => [c.id, c]));
 
-/* ======================= observances (computed) ======================= */
-const ISLAMIC = [[1,1,"Islamic New Year"],[1,10,"Ashura"],[3,12,"Mawlid an-Nabi (12 Rabi I)"],[9,1,"Ramadan begins"],[10,1,"Eid al-Fitr"],[12,10,"Eid al-Adha"]];
-const HOL = {
-  persian: [[1,1,"Nowruz"],[1,2,"Nowruz holiday"],[1,3,"Nowruz holiday"],[1,4,"Nowruz holiday"],[1,13,"Sizdah Be-dar"],[9,30,"Shab-e Yalda (evening)"]],
-  kurdish: [[1,1,"Newroz"]],
-  "islamic-civil": ISLAMIC, "islamic-umalqura": ISLAMIC,
-  hebrew: [["Tishri",1,"Rosh Hashanah"],["Tishri",2,"Rosh Hashanah"],["Tishri",10,"Yom Kippur"],["Tishri",15,"Sukkot"],["Kislev",25,"Hanukkah begins"],["Nisan",15,"Passover"],["Sivan",6,"Shavuot"]],
-  chinese: [["1",1,"Spring Festival"],["1",15,"Lantern Festival"],["5",5,"Dragon Boat Festival"],["8",15,"Mid-Autumn Festival"]],
-  dangi: [["1",1,"Seollal"],["8",15,"Chuseok"]],
-  ethiopic: [[1,1,"Enkutatash (New Year)"],[1,17,"Meskel"],[4,29,"Genna (Christmas)"]],
-  coptic: [[1,1,"Nayrouz (Coptic New Year)"]],
-  indian: [[1,1,"Chaitra 1 (Saka New Year)"]],
-};
-const GREG_HOL = [
-  [1,1,"New Year's Day","*"],[7,4,"Independence Day","US"],[7,14,"Bastille Day","FR"],[9,16,"Independence Day","MX"],[9,7,"Independence Day","BR"],
-  [1,26,"Republic Day","IN"],[8,15,"Independence Day","IN"],[10,29,"Republic Day","TR"],[10,3,"German Unity Day","DE"],[10,1,"National Day","CN"],
-  [10,10,"National Day","TW"],[4,13,"Songkran","TH"],[1,7,"Orthodox and Coptic Christmas","RU EG"],[3,21,"Newroz","KRD"],
-  [12,25,"Christmas Day","US GB DE FR MX BR NG KE"],
+/* ======================= observances (computed) =======================
+   Each entry: [month, day, name, kind, countries]. kind: "nat" national or civic day, "rel" religious day,
+   "cul" new year, seasonal or cultural day. countries: space-separated country ids; empty = every country using that calendar. */
+const KINDS = {nat: "National and civic days", rel: "Religious days", cul: "New year, seasonal and cultural days", pers: "Your special days"};
+const ISLAMIC = [
+  [1,1,"Islamic New Year","rel"],[1,10,"Ashura","rel"],[3,12,"Mawlid an-Nabi (12 Rabi I)","rel"],[7,27,"Isra and Mi'raj","rel"],
+  [9,1,"Ramadan begins","rel"],[10,1,"Eid al-Fitr","rel"],[10,2,"Eid al-Fitr holiday","rel"],[12,9,"Day of Arafah","rel"],[12,10,"Eid al-Adha","rel"],
+  [1,9,"Tasua","rel","IR"],[2,20,"Arbaeen","rel","IR IQ"],[2,28,"Death of the Prophet and Imam Hasan","rel","IR"],
+  [3,17,"Birth of the Prophet (17 Rabi I)","rel","IR"],[7,13,"Birth of Imam Ali","rel","IR"],[8,15,"Birth of the Mahdi","rel","IR"],
+  [9,21,"Martyrdom of Imam Ali","rel","IR"],[12,18,"Eid al-Ghadir","rel","IR IQ"],
 ];
+const HOL = {
+  persian: [[1,1,"Nowruz","cul"],[1,2,"Nowruz holiday","cul"],[1,3,"Nowruz holiday","cul","IR"],[1,4,"Nowruz holiday","cul","IR"],
+    [1,12,"Islamic Republic Day","nat","IR"],[1,13,"Sizdah Be-dar (Nature Day)","cul"],[3,14,"Death of Khomeini","nat","IR"],
+    [3,15,"Khordad 15 uprising","nat","IR"],[11,22,"Revolution Day","nat","IR"],[12,29,"Oil Nationalization Day","nat","IR"],
+    [5,28,"Independence Day","nat","AF"],[9,30,"Shab-e Yalda (evening)","cul"]],
+  kurdish: [[1,1,"Newroz","cul"]],
+  "islamic-civil": ISLAMIC, "islamic-umalqura": ISLAMIC,
+  hebrew: [["Tishri",1,"Rosh Hashanah","rel"],["Tishri",2,"Rosh Hashanah","rel"],["Tishri",10,"Yom Kippur","rel"],["Tishri",15,"Sukkot","rel"],
+    ["Tishri",22,"Shemini Atzeret","rel"],["Kislev",25,"Hanukkah begins","rel"],["Adar",14,"Purim","rel"],["Adar II",14,"Purim","rel"],
+    ["Nisan",15,"Passover","rel"],["Nisan",27,"Holocaust Remembrance Day","nat","IL"],["Iyar",5,"Independence Day","nat","IL"],
+    ["Sivan",6,"Shavuot","rel"],["Av",9,"Tisha B'Av","rel"]],
+  chinese: [["1",1,"Spring Festival","cul"],["1",15,"Lantern Festival","cul"],["3",10,"Hung Kings' Festival","nat","VN"],["5",5,"Dragon Boat Festival","cul"],
+    ["7",7,"Qixi Festival","cul"],["8",15,"Mid-Autumn Festival","cul"],["9",9,"Double Ninth Festival","cul"]],
+  dangi: [["1",1,"Seollal","cul"],["4",8,"Buddha's Birthday","rel"],["8",15,"Chuseok","cul"]],
+  ethiopic: [[1,1,"Enkutatash (New Year)","cul"],[1,17,"Meskel","rel"],[4,29,"Genna (Christmas)","rel"],[5,11,"Timket (Epiphany)","rel"],[6,23,"Victory of Adwa","nat"]],
+  coptic: [[1,1,"Nayrouz (Coptic New Year)","cul"]],
+  indian: [[1,1,"Chaitra 1 (Saka New Year)","cul"]],
+};
+const NEWYEAR = "US GB DE FR RU MX BR NG KE JP KR CN TW VN TH ID IQ KRD TR EG";
+const LABOUR = "DE FR RU MX BR NG KE CN VN ID IQ KRD TR EG PK ET";
+const XMAS = "US GB DE FR MX BR NG KE IN KR ID IQ KRD";
+const GREG_HOL = [
+  [1,1,"New Year's Day","cul",NEWYEAR],[5,1,"Labour Day","nat",LABOUR],[12,25,"Christmas Day","rel",XMAS],[12,26,"Boxing Day","cul","GB NG KE"],
+  [7,4,"Independence Day","nat","US"],[6,19,"Juneteenth","nat","US"],[11,11,"Veterans Day","nat","US"],
+  [5,8,"Victory in Europe Day","nat","FR"],[7,14,"Bastille Day","nat","FR"],[8,15,"Assumption","rel","FR"],[11,1,"All Saints' Day","rel","FR"],[11,11,"Armistice Day","nat","FR"],
+  [10,3,"German Unity Day","nat","DE"],
+  [1,7,"Orthodox Christmas","rel","RU"],[2,23,"Defender of the Fatherland Day","nat","RU"],[3,8,"International Women's Day","cul","RU"],[5,9,"Victory Day","nat","RU"],[6,12,"Russia Day","nat","RU"],[11,4,"Unity Day","nat","RU"],
+  [9,16,"Independence Day","nat","MX"],[11,2,"Day of the Dead","cul","MX BR"],[12,12,"Our Lady of Guadalupe","rel","MX"],
+  [4,21,"Tiradentes Day","nat","BR"],[9,7,"Independence Day","nat","BR"],[10,12,"Our Lady of Aparecida","rel","BR"],[11,15,"Republic Day","nat","BR"],[11,20,"Black Consciousness Day","nat","BR"],
+  [6,12,"Democracy Day","nat","NG"],[10,1,"Independence Day","nat","NG"],
+  [6,1,"Madaraka Day","nat","KE"],[10,10,"Mazingira Day","nat","KE"],[10,20,"Mashujaa Day","nat","KE"],[12,12,"Jamhuri Day","nat","KE"],
+  [1,26,"Republic Day","nat","IN"],[8,15,"Independence Day","nat","IN"],[10,2,"Gandhi Jayanti","nat","IN"],
+  [2,5,"Kashmir Solidarity Day","nat","PK"],[3,23,"Pakistan Day","nat","PK"],[8,14,"Independence Day","nat","PK"],[12,25,"Quaid-e-Azam Day","nat","PK"],
+  [10,1,"National Day","nat","CN"],[2,28,"Peace Memorial Day","nat","TW"],[10,10,"National Day","nat","TW"],
+  [2,11,"National Foundation Day","nat","JP"],[2,23,"Emperor's Birthday","nat","JP"],[4,29,"Showa Day","nat","JP"],[5,3,"Constitution Day","nat","JP"],[5,4,"Greenery Day","nat","JP"],
+  [5,5,"Children's Day","cul","JP KR"],[11,3,"Culture Day","nat","JP"],[11,23,"Labour Thanksgiving Day","nat","JP"],
+  [3,1,"Independence Movement Day","nat","KR"],[6,6,"Memorial Day","nat","KR"],[8,15,"Liberation Day","nat","KR"],[10,3,"National Foundation Day","nat","KR"],[10,9,"Hangul Day","nat","KR"],
+  [4,30,"Reunification Day","nat","VN"],[9,2,"National Day","nat","VN"],
+  [4,6,"Chakri Day","nat","TH"],[4,13,"Songkran","cul","TH"],[4,14,"Songkran","cul","TH"],[4,15,"Songkran","cul","TH"],[7,28,"King's Birthday","nat","TH"],
+  [8,12,"Mother's Day","nat","TH"],[10,13,"King Bhumibol Memorial Day","nat","TH"],[10,23,"Chulalongkorn Day","nat","TH"],[12,5,"Father's Day","nat","TH"],[12,10,"Constitution Day","nat","TH"],
+  [6,1,"Pancasila Day","nat","ID"],[8,17,"Independence Day","nat","ID"],
+  [1,6,"Army Day","nat","IQ KRD"],[7,14,"Republic Day","nat","IQ KRD"],[10,3,"National Day","nat","IQ KRD"],[12,10,"Victory Day","nat","IQ"],
+  [3,5,"Uprising Day (Raperîn)","nat","KRD"],[3,16,"Halabja Remembrance Day","nat","KRD"],[3,21,"Newroz","cul","KRD"],
+  [2,22,"Founding Day","nat","SA"],[9,23,"National Day","nat","SA"],
+  [4,23,"National Sovereignty and Children's Day","nat","TR"],[5,19,"Youth and Sports Day","nat","TR"],[7,15,"Democracy and National Unity Day","nat","TR"],[8,30,"Victory Day","nat","TR"],[10,29,"Republic Day","nat","TR"],
+  [1,7,"Coptic Christmas","rel","EG"],[1,25,"Revolution Day","nat","EG"],[4,25,"Sinai Liberation Day","nat","EG"],[6,30,"June 30 Revolution","nat","EG"],[7,23,"Revolution Day","nat","EG"],[10,6,"Armed Forces Day","nat","EG"],
+  [5,28,"Downfall of the Derg","nat","ET"],
+];
+/* [month, weekday (0 = Sunday), nth (-1 = last), name, kind, countries] */
+const FLOAT = [
+  [1,1,3,"Martin Luther King Jr. Day","nat","US"],[2,1,3,"Presidents' Day","nat","US"],[5,1,-1,"Memorial Day","nat","US"],[9,1,1,"Labor Day","nat","US"],
+  [10,1,2,"Columbus Day / Indigenous Peoples' Day","nat","US"],[11,4,4,"Thanksgiving","cul","US"],
+  [5,1,1,"Early May bank holiday","nat","GB"],[5,1,-1,"Spring bank holiday","nat","GB"],[8,1,-1,"Summer bank holiday","nat","GB"],
+  [2,1,1,"Constitution Day","nat","MX"],[3,1,3,"Benito Juárez's Birthday","nat","MX"],[11,1,3,"Revolution Day","nat","MX"],
+  [1,1,2,"Coming of Age Day","cul","JP"],
+];
+/* [days from Easter, Orthodox?, name, kind, countries] */
+const EASTER = [
+  [-2,false,"Good Friday","rel","GB DE BR NG KE"],[0,false,"Easter Sunday","rel","US GB DE FR MX BR NG KE"],[1,false,"Easter Monday","rel","GB DE FR NG KE"],
+  [39,false,"Ascension Day","rel","DE FR"],[50,false,"Whit Monday","rel","DE FR"],[-48,false,"Carnival","cul","BR"],[-47,false,"Carnival","cul","BR"],
+  [0,true,"Orthodox Easter","rel","RU ET EG"],[-2,true,"Good Friday (Orthodox)","rel","ET"],[1,true,"Sham el-Nessim","cul","EG"],
+];
+const easterCache = new Map();
+function easterOf(y, orth) {
+  const key = y + (orth ? "o" : "w");
+  if (easterCache.has(key)) return easterCache.get(key);
+  let dt;
+  if (orth) {   // Julian computus, shifted to the Gregorian calendar (valid 1900-2099)
+    const a = y % 4, b = y % 7, c = y % 19, d = (19 * c + 15) % 30, e = (2 * a + 4 * b - d + 34) % 7;
+    const m = Math.floor((d + e + 114) / 31), day = ((d + e + 114) % 31) + 1;
+    dt = new Date(Date.UTC(y, m - 1, day + 13, 12));
+  } else {      // anonymous Gregorian computus
+    const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25),
+      g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4,
+      l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const mo = Math.floor((h + l - 7 * m + 114) / 31), day = ((h + l - 7 * m + 114) % 31) + 1;
+    dt = new Date(Date.UTC(y, mo - 1, day, 12));
+  }
+  const k = dt.toISOString().slice(0, 10);
+  easterCache.set(key, k);
+  return k;
+}
 
 /* ======================= date helpers ======================= */
 const fmtCache = new Map();
@@ -249,23 +323,37 @@ function cText(c, dt) {
   return {main: `Year ${i.year}, ${cMonthName(c, i.month)}, day ${i.day}`, sub: `Day ${i.total.toLocaleString("en-US")} · counted by the ${SYS[baseOf(c)].name} calendar`};
 }
 
+const obsCache = new Map();
 function observances(dt, systems, country) {
+  const ck = dt.getTime() + "|" + [...new Set(systems)].sort().join(",") + "|" + country;
+  if (obsCache.has(ck)) return obsCache.get(ck);
   const out = [];
+  const inC = (w) => !w || w.split(" ").includes(country);
   for (const sys of new Set(systems)) {
     const list = HOL[sys]; if (!list) continue;
     const p = parts(sys, dt);
     const hm = sys === "hebrew" ? F("en-US-u-ca-hebrew", {...U, month: "long"}).format(dt) : null;
-    for (const [m, d, name] of list) {
+    for (const [m, d, name, kind, who] of list) {
+      if (!inC(who)) continue;
       const ok = sys === "hebrew" ? (hm === m && p.d === d) : (String(p.m) === String(m) && p.d === d);
-      if (ok) out.push({sys, name});
+      if (ok) out.push({sys, name, kind});
     }
   }
-  const g = parts("gregory", dt);
-  for (const [m, d, name, who] of GREG_HOL) {
-    if (+g.m === m && g.d === d && (who === "*" || who.split(" ").includes(country))) out.push({sys: "gregory", name});
+  const g = parts("gregory", dt), gm = +g.m, wd = dt.getUTCDay(), key = dt.toISOString().slice(0, 10);
+  for (const [m, d, name, kind, who] of GREG_HOL) if (gm === m && g.d === d && inC(who)) out.push({sys: "gregory", name, kind});
+  const dim = new Date(Date.UTC(g.y, gm, 0)).getUTCDate();
+  for (const [m, w, n, name, kind, who] of FLOAT) {
+    if (gm !== m || wd !== w || !inC(who)) continue;
+    if (n === Math.ceil(g.d / 7) || (n === -1 && g.d + 7 > dim)) out.push({sys: "gregory", name, kind});
+  }
+  for (const [off, orth, name, kind, who] of EASTER) {
+    if (inC(who) && dateToKey(addDays(keyToDate(easterOf(g.y, orth)), off)) === key) out.push({sys: "gregory", name, kind});
   }
   const seen = new Set();
-  return out.filter((o) => (seen.has(o.name) ? false : seen.add(o.name)));
+  const res = out.filter((o) => (seen.has(o.name) ? false : seen.add(o.name)));
+  if (obsCache.size > 5000) obsCache.clear();
+  obsCache.set(ck, res);
+  return res;
 }
 
 /* ======================= Supabase ======================= */
@@ -288,11 +376,14 @@ const S = {
   events: [], cals: [],
   me: null, email: "", myName: "", names: {}, people: {},
   status: "signedout",
+  zoom: store.get("zoom", "month"), def: store.get("default", null), prefs: {}, touched: false, editing: null,
 };
+if (!["year", "month", "week"].includes(S.zoom)) S.zoom = "month";
+if (S.def && byId[S.def.country]) S.country = S.def.country;
 if (!byId[S.country]) S.country = "KRD";
 const C = () => byId[S.country];
 S.tz = store.get("tz:" + S.country, C().tz[0]);
-S.view = store.get("view", C().cals[0]);
+S.view = S.def && S.def.country === S.country ? S.def.view : store.get("view", C().cals[0]);
 S.selected = todayKey(S.tz);
 S.anchor = S.selected;
 
@@ -310,18 +401,22 @@ function colorOf(tag) { const c = customOf(tag || ""); return c ? c.color : (SYS
 function visibleEvents() { const k = customOf(vv()); return k ? S.events.filter((e) => e.calId === k.id) : S.events; }
 
 const fromRow = (r, roles) => ({id: r.id, name: r.name, base: r.base, start: r.start_date, time: r.start_time, tz: r.tz,
-  months: r.month_names || [], color: r.color, owner: r.owner, role: r.owner === S.me ? "owner" : (roles[r.id] || "viewer")});
+  months: r.month_names || [], color: r.color, owner: r.owner, special: Array.isArray(r.special_days) ? r.special_days : [], role: r.owner === S.me ? "owner" : (roles[r.id] || "viewer")});
 const evFromRow = (r) => ({id: r.id, calId: r.calendar_id, cal: "custom:" + r.calendar_id, date: r.day, time: r.time || "",
   title: r.title, note: r.note, media: Array.isArray(r.media) ? r.media : [], by: r.created_by, at: Date.parse(r.created_at) || 0});
 
 /* ======================= render: top + today ======================= */
+const ALL_ZONES = (() => { let z = []; try { z = Intl.supportedValuesOf("timeZone"); } catch (e) {} if (!z.includes("UTC")) z.push("UTC"); return z; })();
 const COLORS = ["#C0392B", "#D2802A", "#2E8B57", "#1D6A9E", "#7A5BB0", "#B5527A"];
 
 function renderCountryPicker() {
   $("country").innerHTML = COUNTRIES.map((c) => `<option value="${c.id}"${c.id === S.country ? " selected" : ""}>${esc(c.name)}</option>`).join("");
-  const tzs = C().tz;
-  $("tzwrap").hidden = tzs.length < 2;
-  $("tz").innerHTML = tzs.map((t) => `<option value="${t}"${t === S.tz ? " selected" : ""}>${esc(t.replace(/_/g, " ").split("/").pop())}</option>`).join("");
+  const own = C().tz, opt = (t) => `<option value="${esc(t)}"${t === S.tz ? " selected" : ""}>${esc(t.replace(/_/g, " "))}</option>`;
+  let h = `<optgroup label="${esc(C().name)}">${own.map(opt).join("")}</optgroup>`;
+  if (!own.includes(S.tz) && !ALL_ZONES.includes(S.tz)) h += opt(S.tz);
+  h += `<optgroup label="All time zones">${ALL_ZONES.filter((z) => !own.includes(z)).map(opt).join("")}</optgroup>`;
+  $("tzwrap").hidden = false;
+  $("tz").innerHTML = h;
 }
 
 function renderToday() {
@@ -367,7 +462,7 @@ function renderClock() {
   document.querySelectorAll("[data-cnow]").forEach((el) => { const k = calById(el.dataset.cnow); if (k) el.textContent = (el.id === "mnow" ? "Now: " : "") + cNowText(k); });
 }
 
-/* ======================= render: month ======================= */
+/* ======================= render: calendar views (year / month / week) ======================= */
 function renderViews() {
   const c = C();
   const main = [...new Set([...c.cals, "gregory"])];
@@ -376,6 +471,8 @@ function renderViews() {
   const others = SYS_ORDER.filter((s) => !main.includes(s));
   h += `<select id="moresys" aria-label="Other calendars"><option value="">Other calendars…</option>${others.map((s) => `<option value="${s}"${S.view === s ? " selected" : ""}>${esc(SYS[s].name)}</option>`).join("")}</select>`;
   $("views").innerHTML = h;
+  document.querySelectorAll("#zoom button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.z === S.zoom)));
+  renderDefault();
 }
 
 function monthRange() {
@@ -387,17 +484,138 @@ function monthRange() {
   const s = monthStart(V, a);
   return {start: s, next: monthNext(V, s)};
 }
+function weekRange() {
+  const a = keyToDate(S.anchor), back = (a.getUTCDay() - C().wk + 7) % 7, s = addDays(a, -back);
+  return {start: s, next: addDays(s, 7)};
+}
+const fmtShort = (d) => F("en-US", {...U, day: "numeric", month: "short", year: "numeric"}).format(d);
+const fmtMD = (d) => F("en-US", {...U, day: "numeric", month: "short"}).format(d);
+function homeLocOf(V) { const c = C(); return c.cals.includes(V) ? c.loc : (SYS[V].home || null); }
+function monthNameLocal(V, dt) {
+  if (V === "kurdish") return KURD_CKB[+parts(V, dt).m - 1];
+  const want = homeLocOf(V);
+  if (!want || /^en/.test(want)) return "";
+  if (V === "gregory" && /^ckb/.test(want) && !CKB_OK) return CKB_GM[+parts("gregory", dt).m - 1];
+  return F(cal(locFor(V, want), V), {...U, month: "long"}).format(dt);
+}
+function yearData() {
+  const V = vv(), k = customOf(V), a = keyToDate(S.anchor);
+  if (k) {
+    const i = cInfo(k, a) || cInfo(k, keyToDate(k.start));
+    const L = cMonths(k, addDays(i.start, 420));
+    const months = [];
+    for (let j = 0; j < L.length - 1; j++) if (L[j].year === i.year) months.push({start: L[j].start, next: L[j + 1].start, label: cMonthName(k, L[j].month), local: ""});
+    return {title: `${k.name}: year ${i.year}`, sub: `${fmtShort(months[0].start)} – ${fmtShort(addDays(months[months.length - 1].next, -1))}`, months, custom: k, year: i.year};
+  }
+  const sys = V === "japanese" ? "gregory" : V;
+  const y = parts(sys, a).y;
+  let months = baseYearMonths(sys, y).map((m) => ({start: m.start, next: addDays(m.start, m.len)}));
+  if (!months.length) {   // fallback: twelve months from the current one
+    let s = monthStart(V, a); months = [];
+    for (let i = 0; i < 12; i++) { const n = monthNext(V, s); months.push({start: s, next: n}); s = n; }
+  }
+  months.forEach((m) => { m.label = monthNameOnly(V, m.start); m.local = monthNameLocal(V, m.start); });
+  const first = months[0].start, last = addDays(months[months.length - 1].next, -1);
+  let title = String(y), local = "";
+  if (V === "chinese" || V === "dangi") title = `${y} · ${lunarParts(V, first).yn} year`;
+  else if (V === "japanese") title = `${y} · ${F("en-US-u-ca-japanese", {...U, era: "long", year: "numeric"}).format(first)}`;
+  else if (ERA[V]) title = `${y} ${ERA[V]}`;
+  if (V === "kurdish") local = arDigits(y);
+  else if (homeLocOf(V) && !/^en/.test(homeLocOf(V)) && V !== "chinese" && V !== "dangi") local = dropEra(F(cal(locFor(V, homeLocOf(V)), V), {...U, year: "numeric"}).format(first));
+  return {title, sub: `${SYS[V].name} · ${fmtShort(first)} – ${fmtShort(last)}`, local, months};
+}
 
 const RTL = /^(fa|ar|he|ckb|ur|ps)/;
+function viewRtl(V, custom) { const c = C(); return !custom && RTL.test(V === "gregory" ? c.loc : (c.cals.includes(V) ? c.loc : (SYS[V].home || ""))); }
+
+/* ---- special days: national, religious and cultural observances, plus each personal calendar's own yearly days ---- */
+function specialCals() { const k = customOf(vv()); return k ? [k] : S.cals; }
+function specialMatch(k, s, dt) {
+  if (s.sys === "custom") { const i = cInfo(k, dt); return !!i && i.month === +s.m && i.day === +s.d; }
+  if (!SYS[s.sys]) return false;
+  const p = parts(s.sys, dt);
+  return p.d === +s.d && normId(s.sys, String(p.m)) === normId(s.sys, String(s.m));
+}
+function specialsOn(dt, cals = specialCals()) {
+  const out = [];
+  for (const k of cals) for (const s of k.special || []) if (specialMatch(k, s, dt)) out.push({name: s.name, kind: s.kind || "pers", color: k.color, cal: k});
+  return out;
+}
+const KIND_ORDER = {pers: 0, nat: 1, rel: 2, cul: 3};
+function marksFor(d, V, custom) {
+  const c = C();
+  const obs = observances(d, custom ? c.cals : [...c.cals, V], c.id);
+  const sp = specialsOn(d);
+  const all = [...sp, ...obs].sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind]);
+  return {obs, sp, all};
+}
+function tintOf(m) {
+  const f = m.all[0];
+  if (!f) return {cls: "", style: ""};
+  return {cls: ` marked t-${f.kind}`, style: f.kind === "pers" ? ` style="--tint:${esc(f.color)}"` : ""};
+}
+function barsOf(m) {
+  if (!m.all.length) return "";
+  return `<span class="bars">${m.all.slice(0, 4).map((o) => o.kind === "pers" ? `<i style="background:${esc(o.color)}"></i>` : `<i class="k-${o.kind}"></i>`).join("")}</span>`;
+}
+function chipsOf(m) {
+  return m.all.map((o) => o.kind === "pers"
+    ? `<span class="kchip" style="--kc:${esc(o.color)}">${esc(o.name)}<b> · ${esc(o.cal.name)}</b></span>`
+    : `<span class="kchip k-${o.kind}">${esc(o.name)}</span>`).join("");
+}
+function renderLegend() {
+  const hasPers = S.cals.some((k) => (k.special || []).length);
+  $("legend").innerHTML = ["nat", "rel", "cul"].map((k) => `<span><i class="k-${k}"></i>${KINDS[k]}</span>`).join("") +
+    (hasPers ? `<span><i class="k-pers"></i>${KINDS.pers}</span>` : "") + `<span><i class="evdot"></i>Your events</span>`;
+}
+
 function renderMonth() {
+  const z = S.zoom;
+  $("monthview").hidden = z !== "month"; $("yearview").hidden = z !== "year"; $("weekview").hidden = z !== "week";
+  $("prevy").hidden = $("nexty").hidden = z !== "month";
+  $("prev").setAttribute("aria-label", `Previous ${z}`); $("next").setAttribute("aria-label", `Next ${z}`);
+  $("prev").title = `Previous ${z}`; $("next").title = `Next ${z}`;
+  const k = customOf(vv());
+  $("mnow").hidden = !k;
+  if (k) { $("mnow").dataset.cnow = k.id; $("mnow").textContent = "Now: " + cNowText(k); } else delete $("mnow").dataset.cnow;
+  if (z === "year") renderYearGrid(); else if (z === "week") renderWeek(); else renderMonthGrid();
+  renderLegend();
+}
+
+function renderYearGrid() {
+  const V = vv(), Y = yearData(), c = C(), k = Y.custom;
+  $("mlabel").textContent = Y.title;
+  $("mlabellocal").textContent = (Y.local ? Y.local + " · " : "") + Y.sub;
+  $("mlabellocal").lang = "en";
+  $("prev").disabled = !!(k && Y.year === 1);
+  const today = k ? cNow(k).key : todayKey(S.tz);
+  const evDays = new Set(visibleEvents().map((e) => e.date));
+  const base = keyToDate("2026-10-18");
+  const wdn = Array.from({length: 7}, (_, i) => F("en-US", {...U, weekday: "narrow"}).format(addDays(base, (c.wk + i) % 7)));
+  $("yearview").innerHTML = Y.months.map((m) => {
+    const lead = (m.start.getUTCDay() - c.wk + 7) % 7;
+    let cells = "";
+    for (let i = 0; i < lead; i++) cells += `<span class="yp"></span>`;
+    let n = 1;
+    for (let d = m.start; d < m.next; d = addDays(d, 1), n++) {
+      const key = dateToKey(d), mk = marksFor(d, V, k), t = tintOf(mk);
+      const label = `${englishDate(k ? "gregory" : V, d)}${mk.all.length ? ". " + mk.all.map((o) => o.name).join(", ") : ""}`;
+      cells += `<button type="button" class="yd${key === today ? " today" : ""}${key === S.selected ? " sel" : ""}${t.cls}"${t.style} data-k="${key}" aria-label="${esc(label)}" title="${esc(mk.all.map((o) => o.name).join(" · "))}">${n}${evDays.has(key) ? `<i class="yev"></i>` : ""}</button>`;
+    }
+    const cur = today >= dateToKey(m.start) && today < dateToKey(m.next);
+    return `<div class="ym"><button type="button" class="ymh${cur ? " cur" : ""}" data-m="${dateToKey(m.start)}" aria-label="Open ${esc(m.label)}"><span>${esc(m.label)}</span>${m.local ? `<span class="local">${esc(m.local)}</span>` : ""}</button>
+      <div class="ywd" aria-hidden="true">${wdn.map((w) => `<span>${w}</span>`).join("")}</div><div class="ydays">${cells}</div></div>`;
+  }).join("");
+  $("yearview").classList.toggle("rtl", viewRtl(V, k));
+}
+
+function renderMonthGrid() {
   const V = vv();
   const c = C(), r = monthRange(), today = r.custom ? cNow(r.custom).key : todayKey(S.tz);
-  $("mnow").hidden = !r.custom;
-  if (r.custom) { $("mnow").dataset.cnow = r.custom.id; $("mnow").textContent = "Now: " + cNowText(r.custom); } else delete $("mnow").dataset.cnow;
   const secSys = V === "gregory" ? (c.cals.find((s) => s !== "gregory") || null) : "gregory";
   if (r.custom) {
     $("mlabel").textContent = `${r.custom.name}: ${cMonthName(r.custom, r.info.month)}, year ${r.info.year}`;
-    $("mlabellocal").textContent = `${F("en-US", {...U, day: "numeric", month: "short", year: "numeric"}).format(r.start)} – ${F("en-US", {...U, day: "numeric", month: "short", year: "numeric"}).format(addDays(r.next, -1))}`;
+    $("mlabellocal").textContent = `${fmtShort(r.start)} – ${fmtShort(addDays(r.next, -1))}`;
     $("mlabellocal").lang = "en";
   } else {
     $("mlabel").textContent = monthLabel(V, r.start);
@@ -407,12 +625,12 @@ function renderMonth() {
   }
   $("prev").disabled = !!(r.custom && r.info.n === 0);
   $("prevy").disabled = !!(r.custom && r.info.year === 1);
-  const rtl = !r.custom && RTL.test(V === "gregory" ? c.loc : (c.cals.includes(V) ? c.loc : (SYS[V].home || "")));
+  const rtl = viewRtl(V, r.custom);
   $("wdays").classList.toggle("rtl", rtl); $("days").classList.toggle("rtl", rtl);
 
   const base = keyToDate("2026-10-18");   // a Sunday
   const wloc = r.custom ? "en-US" : (V === "kurdish" ? "ckb" : c.loc);
-  $("wdays").innerHTML = Array.from({length: 7}, (_, i) => {
+  $("wdays").innerHTML = `<div class="wd wkh"></div>` + Array.from({length: 7}, (_, i) => {
     const d = addDays(base, (c.wk + i) % 7);
     const en = F("en-US", {...U, weekday: "short"}).format(d);
     const lc = /^ckb/.test(wloc) ? CKB_WD_SHORT[d.getUTCDay()] : F(locFor("gregory", wloc), {...U, weekday: "narrow"}).format(d);
@@ -421,25 +639,78 @@ function renderMonth() {
 
   const lead = (r.start.getUTCDay() - c.wk + 7) % 7;
   const cells = [];
-  for (let i = 0; i < lead; i++) cells.push(`<div class="cell pad" aria-hidden="true"></div>`);
-  const sysForObs = [...new Set([...c.cals, ...(r.custom ? [] : [V])])];
+  for (let i = 0; i < lead; i++) cells.push({pad: true});
   const evAll = visibleEvents();
   for (let d = r.start; d < r.next; d = addDays(d, 1)) {
     const key = dateToKey(d);
     const n = r.custom ? cInfo(r.custom, d).day : parts(V, d).d;
     const sec = secSys ? shortDate(secSys, d) : "";
-    const obs = observances(d, sysForObs, c.id);
+    const mk = marksFor(d, V, r.custom), t = tintOf(mk);
     const evs = evAll.filter((e) => e.date === key);
     const img = evs.flatMap((e) => e.media || []).find((m) => (m.type || "").startsWith("image/"));
     const thumb = img ? mediaUrl(img.path) : "";
     const dots = evs.slice(0, 4).map((e) => `<span class="ev" style="background:${esc(colorOf(e.cal))}"></span>`).join("") + (evs.length > 4 ? `<span class="more">+${evs.length - 4}</span>` : "");
-    const label = `${englishDate(r.custom ? "gregory" : V, d)}${obs.length ? ". " + obs.map((o) => o.name).join(", ") : ""}${evs.length ? `. ${evs.length} entr${evs.length === 1 ? "y" : "ies"}` : ""}`;
-    cells.push(`<button type="button" class="cell${key === today ? " today" : ""}${obs.length ? " obs" : ""}" data-k="${key}" aria-pressed="${key === S.selected}" aria-label="${esc(label)}" title="${esc(obs.map((o) => o.name).join(" · "))}">
-      <span class="n">${n}</span><span class="s">${esc(sec)}</span>
+    const names = mk.all.map((o) => o.name);
+    const label = `${englishDate(r.custom ? "gregory" : V, d)}${names.length ? ". " + names.join(", ") : ""}${evs.length ? `. ${evs.length} entr${evs.length === 1 ? "y" : "ies"}` : ""}`;
+    const first = mk.all[0];
+    const hn = first ? `<span class="hn ${first.kind === "pers" ? "" : "k-" + first.kind}"${first.kind === "pers" ? ` style="color:${esc(first.color)}"` : ""}>${esc(first.name)}${names.length > 1 ? ` +${names.length - 1}` : ""}</span>` : "";
+    cells.push({key, html: `<button type="button" class="cell${key === today ? " today" : ""}${t.cls}"${t.style} data-k="${key}" aria-pressed="${key === S.selected}" aria-label="${esc(label)}" title="${esc(names.join(" · "))}">
+      ${barsOf(mk)}<span class="n">${n}</span><span class="s">${esc(sec)}</span>${hn}
       <span class="marks">${thumb ? `<img class="thumb" alt="" src="${esc(thumb)}" loading="lazy">` : ""}${dots}</span>
-    </button>`);
+    </button>`});
   }
-  $("days").innerHTML = cells.join("");
+  const rows = [];
+  for (let i = 0; i < cells.length; i += 7) {
+    const row = cells.slice(i, i + 7), firstDay = row.find((x) => !x.pad);
+    rows.push(`<button type="button" class="wkbtn" data-week="${firstDay.key}" title="Show this week" aria-label="Show the week of ${esc(fmtMD(keyToDate(firstDay.key)))}">${rtl ? "‹" : "›"}</button>` +
+      row.map((x) => x.pad ? `<div class="cell pad" aria-hidden="true"></div>` : x.html).join(""));
+  }
+  $("days").innerHTML = rows.join("");
+}
+
+function renderWeek() {
+  const V = vv(), k = customOf(V), c = C(), w = weekRange(), today = k ? cNow(k).key : todayKey(S.tz);
+  const end = addDays(w.next, -1);
+  $("mlabel").textContent = `Week of ${fmtMD(w.start)} – ${fmtShort(end)}`;
+  $("mlabellocal").textContent = k ? `${cText(k, w.start).main} – ${cText(k, end).main}` : `${SYS[V].name}: ${shortDate(V, w.start)} – ${shortDate(V, end)}`;
+  $("mlabellocal").lang = "en";
+  $("prev").disabled = !!(k && w.start <= keyToDate(k.start));
+  const secSys = !k && V === "gregory" ? (c.cals.find((s) => s !== "gregory") || null) : "gregory";
+  const evAll = visibleEvents();
+  const loc = k ? "en-US" : (V === "kurdish" ? "ckb" : c.loc);
+  let h = "";
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(w.start, i), key = dateToKey(d), mk = marksFor(d, V, k), t = tintOf(mk);
+    const info = k ? cInfo(k, d) : null;
+    const n = k ? (info ? info.day : "–") : parts(V, d).d;
+    const sub = k ? (info ? cMonthName(k, info.month) : "Before Day 1") : monthNameOnly(V, d);
+    const sec = secSys ? shortDate(secSys, d) : "";
+    const wdl = /^ckb/.test(loc) ? CKB_WD[d.getUTCDay()] : (loc.startsWith("en") ? "" : F(locFor("gregory", loc), {...U, weekday: "long"}).format(d));
+    const evs = evAll.filter((e) => e.date === key).sort((a, b) => (a.time || "99").localeCompare(b.time || "99") || a.at - b.at);
+    h += `<div class="wday${key === today ? " today" : ""}${key === S.selected ? " sel" : ""}${t.cls}"${t.style} data-k="${key}" role="button" tabindex="0" aria-label="${esc(englishDate(k ? "gregory" : V, d))}">
+      ${barsOf(mk)}
+      <div class="wh"><span class="wwd">${esc(F("en-US", {...U, weekday: "short"}).format(d))}${wdl ? ` <span class="local">${esc(wdl)}</span>` : ""}</span>
+        <span class="wn">${n}</span><span class="wsub">${esc(sub)}${sec ? ` · ${esc(sec)}` : ""}</span></div>
+      ${mk.all.length ? `<div class="wchips">${chipsOf(mk)}</div>` : ""}
+      ${evs.map((e) => `<div class="wev" style="--c:${esc(colorOf(e.cal))}">${e.time ? `<span class="time">${esc(e.time)}</span> ` : ""}${esc(e.title || "Untitled")}${e.media.length ? ` <span class="muted">· ${e.media.length} file${e.media.length === 1 ? "" : "s"}</span>` : ""}</div>`).join("")}
+    </div>`;
+  }
+  $("weekview").innerHTML = h;
+  $("weekview").classList.toggle("rtl", viewRtl(V, k));
+}
+
+/* ---- default calendar ---- */
+function isDefault() { return !!S.def && S.def.country === S.country && S.def.view === S.view; }
+function renderDefault() {
+  const b = $("defbtn"), on = isDefault();
+  b.textContent = on ? "★ Default" : "☆ Make default";
+  b.setAttribute("aria-pressed", String(on));
+  b.title = on ? `The app opens on ${viewName(vv())} for ${C().name}. Click to clear.` : `Open the app on ${viewName(vv())} for ${C().name} from now on`;
+}
+async function savePrefs() {
+  if (!S.me || !sb) return;
+  S.prefs = {...(S.prefs || {}), default: S.def};
+  await sb.from("profiles").update({prefs: S.prefs}).eq("id", S.me);
 }
 
 /* ======================= render: day ======================= */
@@ -454,7 +725,11 @@ function renderDay() {
   $("daylc").lang = sys === "kurdish" ? "ckb" : (homeLoc || SYS[sys].home || c.loc);
 
   const obs = observances(dt, [...new Set([...c.cals, sys])], c.id);
-  $("dayobs").innerHTML = obs.map((o) => `<span class="obs-tag"><b>${esc(SYS[o.sys].name)}</b> · ${esc(o.name)}</span>`).join("");
+  const sp = specialsOn(dt);
+  $("dayobs").innerHTML = [...sp.map((o) => `<span class="kchip" style="--kc:${esc(o.color)}">${esc(o.name)}<b> · ${esc(o.cal.name)}</b></span>`),
+    ...obs.map((o) => `<span class="kchip k-${o.kind}">${esc(o.name)}<b> · ${esc(SYS[o.sys].name)}</b></span>`)].join("");
+  const mg = S.cals.filter(canManage);
+  $("dayspecial").hidden = !mg.length;
 
   const evs = visibleEvents().filter((e) => e.date === S.selected).sort((a, b) => (a.time || "99").localeCompare(b.time || "99") || a.at - b.at);
   const writable = S.cals.filter(canAdd);
@@ -515,6 +790,8 @@ function renderCustoms() {
       <div class="acts" style="display:flex;gap:6px;flex-wrap:wrap">
         <button type="button" class="btn ghost" data-showcal="${esc(k.id)}">Show</button>
         <button type="button" class="btn ${canManage(k) ? "" : "ghost"}" data-share="${esc(k.id)}">${canManage(k) ? "Share" : "People"}</button>
+        <button type="button" class="btn ghost" data-special="${esc(k.id)}">Special days${(k.special || []).length ? ` (${k.special.length})` : ""}</button>
+        ${canManage(k) ? `<button type="button" class="btn ghost" data-edit="${esc(k.id)}">Edit</button>` : ""}
         ${owner ? `<button type="button" class="btn ghost danger" data-delcal="${esc(k.id)}">Delete</button>` : `<button type="button" class="btn ghost danger" data-leave="${esc(k.id)}">Leave</button>`}
       </div>
     </div>`;
@@ -668,6 +945,7 @@ function dbError(err) {
 
 /* ======================= interactions: navigation ======================= */
 $("country").addEventListener("change", (e) => {
+  S.touched = true;
   S.country = e.target.value; store.set("country", S.country);
   S.tz = store.get("tz:" + S.country, C().tz[0]);
   if (!customOf(S.view)) S.view = C().cals[0];
@@ -679,7 +957,14 @@ $("country").addEventListener("change", (e) => {
 $("tz").addEventListener("change", (e) => { S.tz = e.target.value; store.set("tz:" + S.country, S.tz); renderToday(); renderMonth(); renderDay(); });
 $("views").addEventListener("click", (e) => { const b = e.target.closest("button[data-v]"); if (b) setView(b.dataset.v); });
 $("views").addEventListener("change", (e) => { if (e.target.id === "moresys" && e.target.value) setView(e.target.value); });
-function setView(v) { S.view = v; store.set("view", v); S.anchor = S.selected; renderViews(); renderMonth(); renderDay(); }
+function setView(v) { S.touched = true; S.view = v; store.set("view", v); S.anchor = S.selected; renderViews(); renderMonth(); renderDay(); }
+function setZoom(z, anchor) { S.zoom = z; store.set("zoom", z); S.anchor = anchor || S.selected; renderViews(); renderMonth(); }
+$("zoom").addEventListener("click", (e) => { const b = e.target.closest("button[data-z]"); if (b) setZoom(b.dataset.z); });
+$("defbtn").addEventListener("click", () => {
+  if (isDefault()) { S.def = null; toast("Default cleared. The app opens where you left it."); }
+  else { S.def = {country: S.country, view: S.view}; toast(`The app will open on ${viewName(vv())} for ${C().name}.`); }
+  store.set("default", S.def); renderDefault(); savePrefs().catch(() => {});
+});
 function yearJump(dir) {
   const V = vv(), r = monthRange();
   if (r.custom) {
@@ -700,10 +985,27 @@ function yearJump(dir) {
 }
 $("prevy").addEventListener("click", () => yearJump(-1));
 $("nexty").addEventListener("click", () => yearJump(1));
-$("prev").addEventListener("click", () => { const r = monthRange(); S.anchor = dateToKey(addDays(r.start, -1)); renderMonth(); });
-$("next").addEventListener("click", () => { const r = monthRange(); S.anchor = dateToKey(r.next); renderMonth(); });
+function step(dir) {
+  if (S.zoom === "year") return yearJump(dir);
+  if (S.zoom === "week") { S.anchor = dateToKey(addDays(weekRange().start, dir * 7)); renderMonth(); return; }
+  const r = monthRange(); S.anchor = dateToKey(dir < 0 ? addDays(r.start, -1) : r.next); renderMonth();
+}
+$("prev").addEventListener("click", () => step(-1));
+$("next").addEventListener("click", () => step(1));
+function pickDay(key) { S.selected = key; renderDay(); if (matchMedia("(max-width:960px)").matches) $("daypanel").scrollIntoView({behavior: "smooth", block: "start"}); }
+$("yearview").addEventListener("click", (e) => {
+  const m = e.target.closest("[data-m]"); if (m) { setZoom("month", m.dataset.m); return; }
+  const d = e.target.closest("[data-k]"); if (d) { S.selected = d.dataset.k; setZoom("month", d.dataset.k); renderDay(); }
+});
+$("weekview").addEventListener("click", (e) => {
+  const d = e.target.closest("[data-k]"); if (!d) return;
+  $("weekview").querySelectorAll(".wday.sel").forEach((x) => x.classList.remove("sel")); d.classList.add("sel");
+  pickDay(d.dataset.k);
+});
+$("weekview").addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && e.target.dataset.k) { e.preventDefault(); e.target.click(); } });
 $("gotoday").addEventListener("click", () => { S.selected = todayKey(S.tz); S.anchor = S.selected; renderMonth(); renderDay(); });
 $("days").addEventListener("click", (e) => {
+  const wk = e.target.closest("[data-week]"); if (wk) { setZoom("week", wk.dataset.week); return; }
   const b = e.target.closest("button[data-k]"); if (!b) return;
   S.selected = b.dataset.k;
   $("days").querySelectorAll("[aria-pressed=true]").forEach((x) => x.setAttribute("aria-pressed", "false"));
@@ -840,6 +1142,21 @@ async function createCalendar() {
   const months = $("c-months").value.split(",").map((x) => x.trim()).filter(Boolean).slice(0, 13);
   const color = (document.querySelector('input[name="c-color"]:checked') || {}).value || COLORS[0];
   $("calbtn").disabled = true;
+  if (S.editing) {
+    try {
+      const {data, error} = await sb.from("calendars").update({name: name.slice(0, 80), base, start_date: dateToKey(dt), start_time: normTime($("c-time").value),
+        tz: $("c-tz").value || "UTC", month_names: months, color}).eq("id", S.editing).select().single();
+      if (error) throw error;
+      const old = calById(S.editing), k = fromRow(data, {[data.id]: old ? old.role : "editor"});
+      S.cals = S.cals.map((x) => x.id === k.id ? k : x);
+      monthCache.clear(); obsCache.clear();
+      endEdit();
+      msg.textContent = `Saved changes to ${k.name}.`;
+      saveCache(); renderAll();
+    } catch (err) { msg.className = "formmsg err"; msg.textContent = dbError(err); }
+    finally { $("calbtn").disabled = false; }
+    return;
+  }
   try {
     const {data, error} = await sb.from("calendars").insert({name: name.slice(0, 80), base, start_date: dateToKey(dt), start_time: normTime($("c-time").value),
       tz: $("c-tz").value || "UTC", month_names: months, color}).select().single();
@@ -866,6 +1183,10 @@ function confirmClick(btn, label) {
 $("clist").addEventListener("click", async (e) => {
   const show = e.target.closest("[data-showcal]");
   if (show) { setView("custom:" + show.dataset.showcal); $("views").scrollIntoView({behavior: "smooth", block: "start"}); return; }
+  const ed = e.target.closest("[data-edit]");
+  if (ed) { startEdit(ed.dataset.edit); return; }
+  const spb = e.target.closest("[data-special]");
+  if (spb) { openSpecial(spb.dataset.special); return; }
   const sh = e.target.closest("[data-share]");
   if (sh) { openShare(sh.dataset.share); return; }
   const del = e.target.closest("[data-delcal]");
@@ -890,6 +1211,138 @@ $("clist").addEventListener("click", async (e) => {
     saveCache(); renderAll();
     toast(del ? `Deleted “${k ? k.name : "calendar"}”.` : `You left “${k ? k.name : "the calendar"}”.`);
   } catch (err) { $("calmsg").className = "formmsg err"; $("calmsg").textContent = dbError(err); btn.disabled = false; }
+});
+
+/* ---- editing a calendar uses the same form as creating one ---- */
+function startEdit(id) {
+  const k = calById(id); if (!k || !canManage(k)) return;
+  S.editing = id;
+  $("c-name").value = k.name;
+  $("c-base").value = baseOf(k);
+  setBaseFromGregorian(keyToDate(k.start));
+  $("c-time").value = k.time || "00:00:00";
+  if (![...$("c-tz").options].some((o) => o.value === k.tz)) $("c-tz").insertAdjacentHTML("afterbegin", `<option value="${esc(k.tz)}">${esc(k.tz.replace(/_/g, " "))}</option>`);
+  $("c-tz").value = k.tz || "UTC";
+  $("c-months").value = (k.months || []).join(", ");
+  const r = document.querySelector(`input[name="c-color"][value="${k.color}"]`); if (r) r.checked = true;
+  $("calformh").textContent = `Edit “${k.name}”`;
+  $("calbtn").textContent = "Save changes";
+  $("calcancel").hidden = false;
+  $("calmsg").className = "formmsg"; $("calmsg").textContent = "Changing Day 1 or the counting calendar renumbers every day of this calendar. Events stay on their dates.";
+  updatePreview();
+  $("calform").scrollIntoView({behavior: "smooth", block: "start"});
+}
+function endEdit() {
+  S.editing = null;
+  $("calformh").textContent = "Start a new calendar";
+  $("calbtn").textContent = "Create calendar";
+  $("calcancel").hidden = true;
+  $("c-name").value = ""; $("c-months").value = "";
+}
+$("calcancel").addEventListener("click", () => { endEdit(); $("calmsg").textContent = ""; });
+
+/* ---- special days ---- */
+let spId = null;
+const spUid = () => Math.random().toString(36).slice(2, 10);
+function spMonthCount(k) {
+  const b = baseOf(k);
+  if (/hebrew|chinese|dangi/.test(b)) return 13;
+  return baseYearMonths(b, parts(b, keyToDate(todayKey(S.tz))).y).length || 12;
+}
+function spMonthList(k, sys, dt) {
+  if (sys === "custom") return Array.from({length: spMonthCount(k)}, (_, i) => ({id: String(i + 1), label: cMonthName(k, i + 1)}));
+  return baseYearMonths(sys, parts(sys, dt || keyToDate(todayKey(S.tz))).y).map((m) => ({id: m.id, label: m.label}));
+}
+function spMonthLabel(k, s) {
+  const hit = spMonthList(k, s.sys).find((m) => normId(s.sys, m.id) === normId(s.sys, String(s.m)));
+  return hit ? hit.label : `Month ${s.m}`;
+}
+function spDescribe(k, s) {
+  return s.sys === "custom" ? `${spMonthLabel(k, s)}, day ${s.d}, in this calendar` : `${s.d} ${spMonthLabel(k, s)}, ${SYS[s.sys] ? SYS[s.sys].name : s.sys} calendar`;
+}
+function spNext(k, s) {
+  let d = keyToDate(todayKey(S.tz));
+  for (let i = 0; i < 400; i++, d = addDays(d, 1)) if (specialMatch(k, s, d)) return {d, i};
+  return null;
+}
+function openSpecial(id, dt) {
+  const k = calById(id); if (!k) return;
+  spId = id;
+  const can = canManage(k), mg = S.cals.filter(canManage);
+  $("sph").textContent = `Special days in “${k.name}”`;
+  $("sp-form").hidden = !can;
+  $("sp-calwrap").hidden = !(can && mg.length > 1);
+  $("sp-cal").innerHTML = mg.map((x) => `<option value="${esc(x.id)}"${x.id === id ? " selected" : ""}>${esc(x.name)}</option>`).join("");
+  const sys = [...new Set([baseOf(k), "gregory", ...C().cals])].filter((x) => SYS[x] && !BASE_EXCLUDE.has(x));
+  $("sp-sys").innerHTML = `<option value="custom">${esc(k.name)}'s own months</option>` + sys.map((x) => `<option value="${x}">${esc(SYS[x].name)} calendar</option>`).join("");
+  const V = vv();
+  $("sp-sys").value = customOf(V) ? "custom" : (sys.includes(V) ? V : "custom");
+  $("sp-name").value = "";
+  $("sp-kind").value = "pers";
+  $("sp-msg").textContent = ""; $("sp-msg").className = "formmsg";
+  spPrefill(dt || keyToDate(S.selected));
+  renderSpList();
+  if ($("spmodal").hidden) openModal("spmodal");
+}
+function spPrefill(dt) {
+  const k = calById(spId), sys = $("sp-sys").value;
+  const list = spMonthList(k, sys, dt);
+  $("sp-m").innerHTML = list.map((m) => `<option value="${esc(m.id)}">${esc(m.label)}</option>`).join("");
+  if (sys === "custom") { const i = cInfo(k, dt); $("sp-m").value = String(i ? i.month : 1); $("sp-d").value = i ? i.day : 1; }
+  else { const p = parts(sys, dt); const hit = list.find((m) => normId(sys, m.id) === normId(sys, String(p.m))); if (hit) $("sp-m").value = hit.id; $("sp-d").value = p.d; }
+  spPreview();
+}
+function spDraft() { return {sys: $("sp-sys").value, m: $("sp-m").value, d: parseInt($("sp-d").value, 10)}; }
+function spPreview() {
+  const k = calById(spId), s = spDraft();
+  if (!Number.isFinite(s.d) || s.d < 1 || s.d > 31) { $("sp-prev").textContent = "Enter a day of the month."; return; }
+  const n = spNext(k, s);
+  $("sp-prev").textContent = n ? `Next: ${englishDate("gregory", n.d)}${n.i === 0 ? " (today)" : ` (in ${n.i} day${n.i === 1 ? "" : "s"})`}.` : "That day does not occur in the coming year of this calendar.";
+}
+function renderSpList() {
+  const k = calById(spId); if (!k) return;
+  const can = canManage(k), list = (k.special || []).slice();
+  $("sp-list").innerHTML = list.length ? list.map((s) => {
+    const n = spNext(k, s);
+    return `<div class="person"><span><span class="pname">${s.kind === "pers" ? `<span class="swatch" style="background:${esc(k.color)}"></span>` : `<span class="swatch k-${esc(s.kind)}"></span>`}${esc(s.name)}</span>
+      <span class="muted" style="display:block;font-size:13px">${esc(spDescribe(k, s))}${n ? ` · next ${esc(fmtShort(n.d))}` : ""}</span></span>
+      ${can ? `<span class="pctl"><button type="button" class="btn ghost danger" data-spdel="${esc(s.id)}">Remove</button></span>` : ""}</div>`;
+  }).join("") : `<div class="muted" style="font-size:14px">No special days yet.${can ? " Add birthdays, anniversaries, or any day this calendar should mark every year." : ""}</div>`;
+}
+async function saveSpecial(k, list, okMsg) {
+  const msg = $("sp-msg"); msg.className = "formmsg"; msg.textContent = "Saving…";
+  const {data, error} = await sb.from("calendars").update({special_days: list}).eq("id", k.id).select("id");
+  if (error || !data || !data.length) {
+    msg.className = "formmsg err";
+    msg.textContent = error && /special_days/.test(error.message || "") ? "The database needs update 2 before special days can be saved." : dbError(error || new Error("You do not have permission to change this calendar."));
+    return false;
+  }
+  k.special = list; obsCache.clear(); saveCache(); renderAll(); renderSpList();
+  msg.textContent = okMsg; return true;
+}
+$("sp-cal").addEventListener("change", () => openSpecial($("sp-cal").value, keyToDate(S.selected)));
+$("sp-sys").addEventListener("change", () => spPrefill(keyToDate(S.selected)));
+$("sp-m").addEventListener("change", spPreview);
+$("sp-d").addEventListener("input", spPreview);
+$("sp-add").addEventListener("click", async () => {
+  const k = calById(spId), s = spDraft(), name = $("sp-name").value.trim().slice(0, 80);
+  if (!name) { $("sp-msg").className = "formmsg err"; $("sp-msg").textContent = "Give the day a name."; return; }
+  if (!Number.isFinite(s.d) || s.d < 1 || s.d > 31 || !spNext(k, s)) { $("sp-msg").className = "formmsg err"; $("sp-msg").textContent = "That month and day do not exist in this calendar."; return; }
+  $("sp-add").disabled = true;
+  const ok = await saveSpecial(k, [...(k.special || []), {id: spUid(), name, sys: s.sys, m: String(s.m), d: s.d, kind: $("sp-kind").value}], `Added “${name}”.`);
+  $("sp-add").disabled = false;
+  if (ok) $("sp-name").value = "";
+});
+$("sp-list").addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-spdel]"); if (!b) return;
+  if (!confirmClick(b, "Confirm remove")) return;
+  const k = calById(spId);
+  await saveSpecial(k, (k.special || []).filter((x) => x.id !== b.dataset.spdel), "Removed.");
+});
+$("dayspecial").addEventListener("click", () => {
+  const k = customOf(vv());
+  const target = k && canManage(k) ? k : S.cals.find(canManage);
+  if (target) openSpecial(target.id, keyToDate(S.selected));
 });
 
 /* ======================= sharing ======================= */
@@ -1033,8 +1486,16 @@ $("ac-save").addEventListener("click", async () => {
 $("ac-out").addEventListener("click", async () => { await sb.auth.signOut(); closeModal("authmodal"); });
 
 async function loadMyName() {
-  const {data} = await sb.from("profiles").select("display_name").eq("id", S.me).maybeSingle();
-  if (data) { S.myName = data.display_name; S.names[S.me] = data.display_name; renderAccount(); }
+  const {data} = await sb.from("profiles").select("*").eq("id", S.me).maybeSingle();
+  if (!data) return;
+  S.myName = data.display_name; S.names[S.me] = data.display_name; renderAccount();
+  S.prefs = data.prefs && typeof data.prefs === "object" ? data.prefs : {};
+  const d = S.prefs.default;
+  if (d && byId[d.country] && !S.touched && JSON.stringify(d) !== JSON.stringify(S.def)) {
+    S.def = d; store.set("default", d);
+    S.country = d.country; S.tz = store.get("tz:" + S.country, C().tz[0]); S.view = d.view;
+    calBaseOptions(); renderAll();
+  }
 }
 async function acceptPendingInvite() {
   const t = store.get("invite", null);

@@ -195,6 +195,74 @@ input[type=email],input[type=password]{background:var(--surface);border:1px soli
 .toast[hidden]{display:none}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:max(20px,env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:60;font-size:14px;max-width:calc(100% - 32px)}
 .linkbtn{background:none;border:0;padding:0;color:var(--accent);cursor:pointer;text-decoration:underline;font-size:13px;justify-self:start}
+/* ---------- year / month / week ---------- */
+:root{--nat:#2F5DA8;--rel:#7A4FB5;--cul:#C2700F;--pers:#C0392B}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--nat:#82A9EC;--rel:#BE9DF0;--cul:#EDAA55}}
+:root[data-theme="dark"]{--nat:#82A9EC;--rel:#BE9DF0;--cul:#EDAA55}
+.k-nat{--kc:var(--nat)} .k-rel{--kc:var(--rel)} .k-cul{--kc:var(--cul)} .k-pers{--kc:var(--pers)}
+.t-nat{--tint:var(--nat)} .t-rel{--tint:var(--rel)} .t-cul{--tint:var(--cul)} .t-pers{--tint:var(--pers)}
+.countryrow{display:flex;gap:8px;align-items:end}
+#defbtn[aria-pressed="true"]{color:var(--gold);border-color:var(--gold)}
+.zoom{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px;justify-self:start;background:var(--bg)}
+.zoom button{border:0;background:transparent;border-radius:999px;padding:5px 16px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted)}
+.zoom button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.mgrid{grid-template-columns:22px repeat(7,minmax(0,1fr))}
+.wkbtn{border:0;background:transparent;color:var(--muted);border-radius:6px;cursor:pointer;padding:0;font-size:16px;line-height:1}
+.wkbtn:hover{background:var(--accent-soft);color:var(--accent)}
+.cell{overflow:hidden}
+.cell.marked,.wday.marked{background:color-mix(in srgb,var(--tint) 13%,var(--bg))}
+.cell.marked .n{color:color-mix(in srgb,var(--tint) 75%,var(--ink));font-weight:500}
+.cell.today .n{color:var(--accent)}
+.bars{position:absolute;inset:0 0 auto 0;height:4px;display:flex}
+.bars i{flex:1;background:var(--kc)}
+.cell .hn{font-size:10.5px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--kc,var(--muted));font-weight:500}
+.grid.rtl .hn{direction:ltr;text-align:right}
+@media (max-width:560px){.cell .hn{display:none}.mgrid{grid-template-columns:16px repeat(7,minmax(0,1fr))}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:3px;background:var(--kc)}
+.legend i.evdot{border-radius:50%;background:var(--accent)}
+.kchip{display:inline-flex;align-items:baseline;gap:2px;border-radius:999px;padding:3px 10px;font-size:13px;background:color-mix(in srgb,var(--kc) 15%,var(--surface));color:var(--ink);border:1px solid color-mix(in srgb,var(--kc) 40%,transparent)}
+.kchip b{font-weight:400;color:var(--muted);font-size:12px}
+.swatch.k-nat,.swatch.k-rel,.swatch.k-cul{background:var(--kc)}
+/* year (like a phone's year screen: small months, today circled) */
+.yearview{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:18px 16px}
+.ym{display:grid;gap:4px;align-content:start;min-width:0}
+.ymh{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;border:0;background:none;padding:2px 0;cursor:pointer;text-align:start;font-family:var(--display);font-size:16px;color:var(--ink)}
+.ymh .local{font-family:var(--script);font-size:13px;color:var(--muted)}
+.ymh.cur{color:var(--danger)}
+.ymh:hover span:first-child{text-decoration:underline}
+.ywd,.ydays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px}
+.ywd span{font-size:9.5px;color:var(--muted);text-align:center}
+.yp{aspect-ratio:1}
+.yd{position:relative;aspect-ratio:1;border:0;background:transparent;border-radius:50%;padding:0;font:inherit;font-size:11px;font-variant-numeric:tabular-nums;color:var(--ink);cursor:pointer;display:grid;place-items:center;min-width:0}
+.yd.marked{background:color-mix(in srgb,var(--tint) 26%,transparent);color:color-mix(in srgb,var(--tint) 70%,var(--ink));font-weight:600}
+.yd.today{background:var(--danger);color:#fff;font-weight:600}
+.yd.sel{outline:1.5px solid var(--accent);outline-offset:-1px}
+.yd:hover{outline:1px solid var(--line)}
+.yd .yev{position:absolute;bottom:1px;left:50%;width:3px;height:3px;margin-left:-1.5px;border-radius:50%;background:var(--accent)}
+.yd.today .yev{background:#fff}
+.yearview.rtl .ydays,.yearview.rtl .ywd{direction:rtl}
+@media (max-width:560px){.yearview{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 8px}.yd{font-size:9px}.ywd span{font-size:8px}.ymh{font-size:13px}.ymh .local{display:none}}
+/* week */
+.weekview{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.weekview.rtl{direction:rtl}
+.wday{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:10px 8px 8px;display:grid;gap:6px;align-content:start;min-height:220px;cursor:pointer;min-width:0}
+.wday:hover{border-color:var(--accent)}
+.wday.today{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.wday.sel{background:var(--accent-soft)}
+.wh{display:grid;gap:1px}
+.wwd{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.wwd .local{text-transform:none;letter-spacing:0;font-size:12px}
+.wn{font-family:var(--mono);font-size:24px;line-height:1.1}
+.wday.today .wn{color:var(--accent)}
+.wsub{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.wchips{display:flex;flex-wrap:wrap;gap:4px}
+.wchips .kchip{font-size:11px;padding:2px 7px}
+.wchips .kchip b{display:none}
+.wev{font-size:12px;border-inline-start:3px solid var(--c);padding:2px 6px;background:var(--surface);border-radius:4px;overflow-wrap:anywhere}
+.wev .time{font-family:var(--mono);color:var(--muted)}
+@media (max-width:760px){.weekview{grid-template-columns:1fr}.wday{min-height:0;grid-template-columns:72px 1fr;align-items:start}.wday>.wchips,.wday>.wev{grid-column:2}.wday>.wh{grid-row:span 9}}
 [hidden]{display:none !important}
 </style>
 </head>
@@ -212,9 +280,12 @@ input[type=email],input[type=password]{background:var(--surface);border:1px soli
       <span class="sub">Every official calendar, your own calendars, and the days you share.</span>
     </div>
     <div class="pickers">
-      <label for="country">Country or region
-        <select id="country"></select>
-      </label>
+      <div class="countryrow">
+        <label for="country">Country or region
+          <select id="country"></select>
+        </label>
+        <button class="btn" id="defbtn" type="button" aria-pressed="false">☆ Make default</button>
+      </div>
       <label for="tz" id="tzwrap" hidden>Time zone
         <select id="tz"></select>
       </label>
@@ -244,6 +315,9 @@ input[type=email],input[type=password]{background:var(--surface);border:1px soli
   <section class="work">
     <div class="panel" aria-label="Month">
       <div class="views" id="views" role="group" aria-label="Calendar to show"></div>
+      <div class="zoom" id="zoom" role="group" aria-label="Zoom">
+        <button type="button" data-z="year" aria-pressed="false">Year</button><button type="button" data-z="month" aria-pressed="true">Month</button><button type="button" data-z="week" aria-pressed="false">Week</button>
+      </div>
       <div class="nav">
         <button class="btn" id="prevy" aria-label="Previous year" title="Previous year">«</button>
         <button class="btn" id="prev" aria-label="Previous month" title="Previous month">‹</button>
@@ -252,8 +326,13 @@ input[type=email],input[type=password]{background:var(--surface);border:1px soli
         <button class="btn" id="nexty" aria-label="Next year" title="Next year">»</button>
         <button class="btn" id="gotoday">Today</button>
       </div>
-      <div class="grid" id="wdays" aria-hidden="true"></div>
-      <div class="grid" id="days"></div>
+      <div id="monthview">
+        <div class="grid mgrid" id="wdays" aria-hidden="true"></div>
+        <div class="grid mgrid" id="days"></div>
+      </div>
+      <div class="yearview" id="yearview" hidden></div>
+      <div class="weekview" id="weekview" hidden></div>
+      <div class="legend" id="legend"></div>
     </div>
 
     <div class="panel" aria-label="Selected day" id="daypanel">
@@ -263,6 +342,7 @@ input[type=email],input[type=password]{background:var(--surface);border:1px soli
         <div class="lc local" id="daylc"></div>
       </div>
       <div class="obs-list" id="dayobs"></div>
+      <div><button class="btn ghost" type="button" id="dayspecial" hidden>＋ Make this a yearly special day</button></div>
       <div class="events" id="dayevents"></div>
       <div class="empty" id="addhint" hidden>To add events, first start a personal calendar below, or open an invite link someone sent you.
         <div style="margin-top:8px"><button class="btn" id="addhintbtn" type="button">Start a calendar</button></div></div>
@@ -302,7 +382,7 @@ input[type=email],input[type=password]{background:var(--surface);border:1px soli
       <div style="margin-top:8px"><button class="btn primary" id="custsigninbtn" type="button">Create an account or sign in</button></div></div>
     <div class="clist" id="clist"></div>
     <form class="add" id="calform" autocomplete="off" hidden>
-      <h3>Start a new calendar</h3>
+      <h3 id="calformh">Start a new calendar</h3>
       <div class="row">
         <label for="c-name">Name<input type="text" id="c-name" maxlength="80" placeholder="Saman's calendar"></label>
         <label for="c-base">Count months and years by<select id="c-base"></select></label>
@@ -329,7 +409,7 @@ input[type=email],input[type=password]{background:var(--surface);border:1px soli
         <div class="colors" id="colors"></div>
       </div>
       <div class="formmsg" id="calmsg" role="status"></div>
-      <div><button class="btn primary" type="submit" id="calbtn">Create calendar</button></div>
+      <div><button class="btn primary" type="submit" id="calbtn">Create calendar</button> <button class="btn" type="button" id="calcancel" hidden>Cancel</button></div>
     </form>
   </section>
 
@@ -384,6 +464,35 @@ input[type=email],input[type=password]{background:var(--surface);border:1px soli
     <div id="sh-people"></div>
     <div class="formmsg" id="sh-msg" role="status"></div>
     <div><button class="btn ghost danger" type="button" id="sh-revoke">Turn off unused invite links</button></div>
+  </div>
+</div>
+
+<!-- special days -->
+<div class="modal" id="spmodal" hidden role="dialog" aria-modal="true" aria-labelledby="sph">
+  <div class="sheet">
+    <div class="head"><h2 id="sph">Special days</h2><button class="btn ghost" data-close aria-label="Close">Done</button></div>
+    <div id="sp-list"></div>
+    <div id="sp-form" style="display:grid;gap:12px;border-top:1px solid var(--line);padding-top:14px">
+      <h3>Add a yearly special day</h3>
+      <label id="sp-calwrap" for="sp-cal">Calendar<select id="sp-cal"></select></label>
+      <label for="sp-name">Name<input type="text" id="sp-name" maxlength="80" placeholder="Mom's birthday, our anniversary, first day in Tucson…"></label>
+      <label for="sp-sys">Repeats every year by<select id="sp-sys"></select></label>
+      <div class="row">
+        <label for="sp-m">Month<select id="sp-m"></select></label>
+        <label for="sp-d">Day<input type="text" inputmode="numeric" id="sp-d" maxlength="2"></label>
+      </div>
+      <label for="sp-kind">Kind of day
+        <select id="sp-kind">
+          <option value="pers">Personal (this calendar's color)</option>
+          <option value="nat">National or civic</option>
+          <option value="rel">Religious</option>
+          <option value="cul">Cultural, seasonal or new year</option>
+        </select>
+      </label>
+      <div class="preview" id="sp-prev"></div>
+      <div><button class="btn primary" type="button" id="sp-add">Add special day</button></div>
+    </div>
+    <div class="formmsg" id="sp-msg" role="status"></div>
   </div>
 </div>
 
