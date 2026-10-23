@@ -1,6 +1,6 @@
 /* Calendar Atlas service worker: keeps the app itself available offline.
    Your calendars and events come from Supabase and are never cached here (the app keeps its own copy). */
-const CACHE = "atlas-v1";
+const CACHE = "atlas-v2";
 const SHELL = ["./", "index.html", "app.js", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png"];
 const LIB = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.9/dist/umd/supabase.js";
 

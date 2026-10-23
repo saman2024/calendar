@@ -597,25 +597,31 @@ function setupRealtime() {
 function teardownRealtime() { if (chan) { sb.removeChannel(chan); chan = null; } }
 
 /* ======================= photos and videos ======================= */
+/* Photos and videos are downloaded through the signed-in connection and shown from a local copy
+   (a blob: address on the app's own origin), so the browser never blocks them as cross-site images. */
 const urlCache = new Map(), signFailed = new Set(), signQ = new Set();
 let signTimer = null;
 function mediaUrl(path) {
   if (!path) return "";
   const c = urlCache.get(path);
-  if (c && c.exp > Date.now()) return c.url;
+  if (c) return c;
   if (!signFailed.has(path) && sb && S.me) { signQ.add(path); clearTimeout(signTimer); signTimer = setTimeout(flushSign, 40); }
   return "";
 }
+const inFlight = new Set();
 async function flushSign() {
-  const paths = [...signQ]; signQ.clear();
+  const paths = [...signQ].filter((p) => !inFlight.has(p)); signQ.clear();
   if (!paths.length) return;
-  const {data, error} = await sb.storage.from("media").createSignedUrls(paths, 3600);
-  if (error || !data) { paths.forEach((p) => signFailed.add(p)); return; }
+  paths.forEach((p) => inFlight.add(p));
   let n = 0;
-  for (const r of data) {
-    if (r.signedUrl) { urlCache.set(r.path, {url: r.signedUrl, exp: Date.now() + 3500e3}); n++; }
-    else if (r.path) signFailed.add(r.path);
-  }
+  await Promise.all(paths.map(async (p) => {
+    try {
+      const {data, error} = await sb.storage.from("media").download(p);
+      if (error || !data) throw error || new Error("no data");
+      urlCache.set(p, URL.createObjectURL(data)); n++;
+    } catch (e) { signFailed.add(p); }
+    finally { inFlight.delete(p); }
+  }));
   if (n) { renderMonth(); renderDay(); }
 }
 async function shrinkImage(f) {
@@ -1045,7 +1051,7 @@ async function onSession(session) {
   sessionUser = id;
   S.me = id; S.email = session ? session.user.email : "";
   S.cals = []; S.events = []; S.names = {}; S.people = {}; S.myName = "";
-  urlCache.clear(); signFailed.clear(); monthCache.clear();
+  urlCache.forEach((u) => URL.revokeObjectURL(u)); urlCache.clear(); signFailed.clear(); monthCache.clear();
   if (!S.me) {
     teardownRealtime(); setStatus("signedout"); renderAll();
     if (store.get("invite", null)) openAuth("up", "Someone shared a calendar with you. Create an account, or sign in, to open it.");
